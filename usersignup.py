@@ -118,7 +118,7 @@ class MainPage(webapp2.RequestHandler):
         verifyerror = "" if passworderror else "" if user_password == user_verify else "Your passwords didnt match."
         emailerror = "" if email else "That's not a valid email."
 
-        if (username and password and verify and email):
+        if (not usernameerror and not passworderror and not verifyerror and not emailerror):
           self.redirect("/unit2/welcome?username=" + user_username)
         else:
           self.write_form(usernameerror, passworderror, verifyerror, emailerror, user_username, user_email)
