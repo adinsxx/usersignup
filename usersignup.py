@@ -86,10 +86,9 @@ class Handler(webapp2.RequestHandler):
         
 class MainPage(Handler):
         def render_usersignup(self, username="", usernameerror="", passworderror="", verifyerror = "", email = "", emailerror = ""):
-            #arts = db.GqlQuery("SELECT * FROM Art "
-            #                   "ORDER BY created DESC ")
+        
             users = db.GqlQuery("SELECT * FROM User")
-                           
+            
             self.render("usersignup.html", username=username, usernameerror=usernameerror, passworderror=passworderror, verifyerror = verifyerror, email = email, emailerror = emailerror, users = users)
             
         def get(self):
@@ -137,7 +136,9 @@ class MainPage(Handler):
                 currentCookie = str(usernameCookie)
 
                 if (not usernameerror and not passworderror and not verifyerror and not emailerror):
+                    #salted_password = make_pw_hash(user_username,user_password)
                     u = User(username = user_username, password = user_password, email = user_email)
+                    #u = User(username = user_username, password = salted_password.split(',')[0], email = user_email)
                     u.put()
                     self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val) # just for user_id
                     #self.response.headers.add_header('Set-Cookie', '%s=%s; Path=/' % (str(usernameCookie), new_username_cookie_val))
