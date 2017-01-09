@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Sign Up</title>
+    </head>
+  
+    <body>
+        <h2>Sign Up</h1>
+        
+        <form method="post">
+            <table>
+                <tr>
+                    <td class="label">
+                        Username
+                    </td>
+                    <td>
+                        <input type="text" name="username" value="{{username}}">
+                    </td>
+                    <td>
+                        <div style="color: red">{{usernameerror}}</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">
+                        Password
+                    </td>
+                    <td>
+                        <input type="password" name="password" value="">
+                    </td>
+                    <td>
+                        <div style="color: red">{{passworderror}}</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">
+                        Verify Password
+                    </td>
+                    <td>
+                        <input type="password" name="verify" value="">
+                    </td>
+                    <td>
+                        <div style="color: red">{{verifyerror}}</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">
+                        Email (optional)
+                    </td>
+                    <td>
+                        <input type="text" name="email" value="{{email}}">
+                    </td>
+                    <td>
+                        <div style="color: red">{{emailerror}}</div>
+                    </td>
+                </tr>
+            </table>
+            <br>
+            <input type="submit">
+        </form>
+        
+                <!-- {% for user in users %}
+            <div class="art">
+                <div class="art-title">{{user.username}}</div>
+                <pre class="art-body">{{user.password}}</pre>
+            </div>
+        {% endfor %} -->
+    </body>
+</html>

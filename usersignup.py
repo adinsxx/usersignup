@@ -12,7 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import webapp2, cgi,re, hashlib, hmac, random, string, logging
+import webapp2, cgi,re, hashlib, hmac, random, string, logging, jinja2, os
+
+from google.appengine.ext import db
+
+template_dir = os.path.join(os.path.dirname(__file__),'templates')
+
+jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir), autoescape = True)
 
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
 PASSWORD_RE = re.compile(r"^.{3,20}$")
@@ -30,9 +36,7 @@ def make_secure_val(s):
     return "%s|%s" % (s, hash_str(s))
 
 def check_secure_val(h):
-    #logging.warning("what is h " + h)
     val = h.split('|')[0]
-    #logging.warning("what is val " + val)
     if h == make_secure_val(val):
         return val
                 
@@ -49,67 +53,7 @@ def make_pw_hash(name, pw, salt = None):
 def valid_pw(name, pw, h):
         salt = h.split(',')[1]
         return h == make_pw_hash(name, pw, salt)
-
-form="""
-<!DOCTYPE html>
-<html>
-<head><title>Sign Up</title></head>
-<body>
-<h2>Sign Up</h2>
-<form method="post">    
-        <table>
-                <tr>
-                    <td class="label">
-                        Username
-                    </td>
-                    <td>
-                        <input type="text" name="username" value="%(username)s">
-                    </td>
-                    <td>
-                        <div style="color: red">%(usernameerror)s</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="label">
-                        Password
-                    </td>
-                    <td>
-                        <input type="password" name="password" value="">
-                    </td>
-                    <td>
-                        <div style="color: red">%(passworderror)s</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="label">
-                        Verify Password
-                    </td>
-                    <td>
-                        <input type="password" name="verify" value="">
-                    </td>
-                    <td>
-                        <div style="color: red">%(verifyerror)s</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="label">
-                        Email (optional)
-                    </td>
-                    <td>
-                        <input type="text" name="email" value="%(email)s">
-                    </td>
-                    <td>
-                        <div style="color: red">%(emailerror)s</div>
-                    </td>
-                </tr>
-        </table>
-        <br>
-        <input type="submit"> 
-</form>
-</body>
-</html>
-"""
-
+        
 def valid_username(username):
         return username and USER_RE.match(username)
 
@@ -121,18 +65,35 @@ def valid_email(email):
 
 def escape_html(s):
         return cgi.escape(s,quote = True)
+   
 
-class MainPage(webapp2.RequestHandler):
-        def write_form(self, usernameerror="", passworderror="", verifyerror="", emailerror="", username="", email=""):
-                self.response.out.write(form % {"usernameerror": usernameerror,
-                        "passworderror": passworderror,
-                        "verifyerror": verifyerror,
-                        "emailerror": emailerror,
-                        "username": escape_html(username),
-                        "email": escape_html(email)})
+class User(db.Model):
+    username = db.StringProperty(required = True)
+    password = db.StringProperty(required = True)
+    email = db.StringProperty()
+    
+class Handler(webapp2.RequestHandler):
+    def write(self, *a, **kw):
+        self.response.out.write(*a, **kw)
         
+    def render_str(self, template, **params):
+        t = jinja_env.get_template(template)
+        return t.render(params)
+    
+    def render(self, template, **kw):
+        self.write(self.render_str(template, **kw))
+
+        
+class MainPage(Handler):
+        def render_usersignup(self, username="", usernameerror="", passworderror="", verifyerror = "", email = "", emailerror = ""):
+            #arts = db.GqlQuery("SELECT * FROM Art "
+            #                   "ORDER BY created DESC ")
+            users = db.GqlQuery("SELECT * FROM User")
+                           
+            self.render("usersignup.html", username=username, usernameerror=usernameerror, passworderror=passworderror, verifyerror = verifyerror, email = email, emailerror = emailerror, users = users)
+            
         def get(self):
-                self.write_form()
+                self.render_usersignup()
         
         def post(self):
                 user_username = self.request.get('username')
@@ -157,10 +118,14 @@ class MainPage(webapp2.RequestHandler):
                 if username_cookie_str:
                     username_cookie_val = check_secure_val(username_cookie_str)
                     logging.warning("username cookie val " + str(username_cookie_val))
-                    if username_cookie_val == user_username: # added ==
-                        usernameCookie = username_cookie_val
-                        logging.warning("usernameCookie " + str(usernameCookie))
-                        usernameerror = "User name already exists"
+                    dbUser = db.GqlQuery("SELECT * FROM User WHERE username='" + user_username + "'")
+                    #logging.warning("dbUser.username " + dbUser.get().username)
+                    #if username_cookie_val == user_username: # added ==
+                    if dbUser.count():
+                        if username_cookie_val == dbUser.get().username:
+                            usernameCookie = username_cookie_val
+                            logging.warning("usernameCookie " + str(usernameCookie))
+                            usernameerror = "User name already exists"
                     else:
                         logging.warning("else")
                         usernameCookie = user_username # added
@@ -170,16 +135,20 @@ class MainPage(webapp2.RequestHandler):
                 new_username_cookie_val = make_secure_val(str(usernameCookie))
                 global currentCookie
                 currentCookie = str(usernameCookie)
-                #self.response.headers.add_header('Set-Cookie', '%s=%s; Path=/' % (str(usernameCookie), new_username_cookie_val))
-
 
                 if (not usernameerror and not passworderror and not verifyerror and not emailerror):
+                    u = User(username = user_username, password = user_password, email = user_email)
+                    u.put()
                     self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val) # just for user_id
+                    #self.response.headers.add_header('Set-Cookie', '%s=%s; Path=/' % (str(usernameCookie), new_username_cookie_val))
                     self.redirect("/unit2/welcome")
                 else:
-                    self.write_form(usernameerror, passworderror, verifyerror, emailerror, user_username, user_email)
+                    self.render_usersignup(user_username, usernameerror, passworderror, verifyerror, user_email, emailerror)
 
-class WelcomeHandler(webapp2.RequestHandler):
+class WelcomeHandler(Handler):
+        def render_welcome(self, username=""):
+            self.render("welcome.html", username=username)
+            
         def get(self):
             logging.warning("BOO " + currentCookie)
             #username_cookie_str = self.request.cookies.get(currentCookie)
@@ -188,7 +157,7 @@ class WelcomeHandler(webapp2.RequestHandler):
             if username_cookie_val:
                 usernameCookie = username_cookie_val
                 if usernameCookie:
-                    self.response.out.write("<!DOCTYPE html><html><head><title>Unit 2 Signup</title></head><body><h2>Welcome, " + usernameCookie + "!</h2></body></html>")
+                    self.render_welcome(usernameCookie)
                 else:
                     self.redirect('/unit2/signup')
             else:
