@@ -122,7 +122,7 @@ class MainPage(Handler):
                     #if username_cookie_val == user_username: # added ==
                     if dbUser.count():
                         if username_cookie_val == dbUser.get().username:
-                            usernameCookie = username_cookie_val
+                            usernameCookie = ""
                             logging.warning("usernameCookie " + str(usernameCookie))
                             usernameerror = "User name already exists"
                     else:
@@ -136,9 +136,9 @@ class MainPage(Handler):
                 currentCookie = str(usernameCookie)
 
                 if (not usernameerror and not passworderror and not verifyerror and not emailerror):
-                    #salted_password = make_pw_hash(user_username,user_password)
-                    u = User(username = user_username, password = user_password, email = user_email)
-                    #u = User(username = user_username, password = salted_password.split(',')[0], email = user_email)
+                    salted_password = make_pw_hash(user_username,user_password)
+                    #u = User(username = user_username, password = user_password, email = user_email)
+                    u = User(username = user_username, password = salted_password.split(',')[0], email = user_email)
                     u.put()
                     self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val) # just for user_id
                     #self.response.headers.add_header('Set-Cookie', '%s=%s; Path=/' % (str(usernameCookie), new_username_cookie_val))
