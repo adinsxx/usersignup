@@ -171,9 +171,10 @@ class MainPage(webapp2.RequestHandler):
                 global currentCookie
                 currentCookie = str(usernameCookie)
                 #self.response.headers.add_header('Set-Cookie', '%s=%s; Path=/' % (str(usernameCookie), new_username_cookie_val))
-                self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val) # just for user_id
+
 
                 if (not usernameerror and not passworderror and not verifyerror and not emailerror):
+                    self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val) # just for user_id
                     self.redirect("/unit2/welcome")
                 else:
                     self.write_form(usernameerror, passworderror, verifyerror, emailerror, user_username, user_email)
