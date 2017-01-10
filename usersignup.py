@@ -111,7 +111,6 @@ class MainPage(Handler):
                 emailerror = "" if email else "That's not a valid email."
                 
                 usernameCookie = ''
-                #username_cookie_str = self.request.cookies.get(user_username) # handling multiple users
                 username_cookie_str = self.request.cookies.get("user_id")
                 logging.warning("username cookie str " + str(username_cookie_str))
                 if username_cookie_str:
@@ -121,7 +120,7 @@ class MainPage(Handler):
                     #logging.warning("dbUser.username " + dbUser.get().username)
                     #if username_cookie_val == user_username: # added ==
                     if dbUser.count():
-                        if username_cookie_val == dbUser.get().username:
+                        if user_username == dbUser.get().username:
                             usernameCookie = ""
                             logging.warning("usernameCookie " + str(usernameCookie))
                             usernameerror = "User name already exists"
@@ -136,13 +135,12 @@ class MainPage(Handler):
                 currentCookie = str(usernameCookie)
 
                 if (not usernameerror and not passworderror and not verifyerror and not emailerror):
-                    salted_password = make_pw_hash(user_username,user_password)
-                    #u = User(username = user_username, password = user_password, email = user_email)
-                    u = User(username = user_username, password = salted_password.split(',')[0], email = user_email)
-                    u.put()
-                    self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val) # just for user_id
-                    #self.response.headers.add_header('Set-Cookie', '%s=%s; Path=/' % (str(usernameCookie), new_username_cookie_val))
-                    self.redirect("/unit2/welcome")
+                	logging.warning("What did I tell you?")
+                	salted_password = make_pw_hash(user_username,user_password)
+                	u = User(username = user_username, password = salted_password.split(',')[0], email = user_email)
+                	u.put()
+                	self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val) # just for user_id
+                	self.redirect("/unit2/welcome")
                 else:
                     self.render_usersignup(user_username, usernameerror, passworderror, verifyerror, user_email, emailerror)
 
