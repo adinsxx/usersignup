@@ -172,7 +172,12 @@ class LoginHandler(Handler):
                     self.redirect("/unit2/welcome")
                 else:
                     self.render_login(loginerror)
+                    
+class LogoutHandler(Handler):            
+        def get(self):
+            self.response.headers.add_header('Set-Cookie', 'user_id=''; Path=/')
+            self.redirect("/unit2/signup")
 
 app = webapp2.WSGIApplication([
-        ('/unit2/signup', MainPage), ('/unit2/welcome', WelcomeHandler), ('/unit2/login', LoginHandler)
+        ('/unit2/signup', MainPage), ('/unit2/welcome', WelcomeHandler), ('/unit2/login', LoginHandler), ('/unit2/logout', LogoutHandler)
 ], debug=True)
