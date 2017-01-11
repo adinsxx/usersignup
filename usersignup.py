@@ -106,28 +106,18 @@ class MainPage(Handler):
                 verifyerror = "" if passworderror else "" if user_password == user_verify else "Your passwords didnt match."
                 emailerror = "" if email else "That's not a valid email."
                 
-                usernameCookie = ''
-                username_cookie_str = self.request.cookies.get("user_id")
-                if username_cookie_str:
-                    username_cookie_val = check_secure_val(username_cookie_str)
-                    dbUser = db.GqlQuery("SELECT * FROM User WHERE username='" + user_username + "'")
-                    if dbUser.count():
-                        if user_username == dbUser.get().username:
-                            usernameCookie = ""
-                            usernameerror = "User name already exists"
-                    else:
-                        usernameCookie = user_username # added
-                else:
-                    usernameCookie = user_username
-
-                new_username_cookie_val = make_secure_val(str(usernameCookie))
-
+                dbUser = db.GqlQuery("SELECT * FROM User WHERE username='" + user_username + "'")
+                
+                if dbUser.count() and user_username == dbUser.get().username:
+                        usernameerror = "User name already exists"
+                
                 if (not usernameerror and not passworderror and not verifyerror and not emailerror):
-                	salted_password = make_pw_hash(user_username,user_password)
-                	u = User(username = user_username, password = salted_password, email = user_email)
-                	u.put()
-                	self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val) # just for user_id
-                	self.redirect("/unit2/welcome")
+                    new_username_cookie_val = make_secure_val(str(user_username))
+                    salted_password = make_pw_hash(user_username,user_password)
+                    u = User(username = user_username, password = salted_password, email = user_email)
+                    u.put()
+                    self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val)
+                    self.redirect("/unit2/welcome")
                 else:
                     self.render_usersignup(user_username, usernameerror, passworderror, verifyerror, user_email, emailerror)
 
@@ -162,7 +152,6 @@ class LoginHandler(Handler):
                 password = valid_password(user_password)
 
                 loginerror = ""
-                
                 loginerror = "" if user_username else "Invalid login"
                 loginerror = "" if user_password else "Invalid login"
                 loginerror = "" if username else "Invalid login"
@@ -170,16 +159,14 @@ class LoginHandler(Handler):
                 
                 dbUser = db.GqlQuery("SELECT * FROM User WHERE username='" + user_username + "'")
                 
-                if not valid_pw(user_username, user_password, dbUser.get().password):
-                    loginerror = "Invalid login"
-                
                 if not dbUser.count():
                     loginerror = "Invalid login"
+                else:
+                    if not valid_pw(user_username, user_password, dbUser.get().password):
+                        loginerror = "Invalid login"
                 
                 if not loginerror:
                     new_username_cookie_val = make_secure_val(str(user_username))
-                    #global currentCookie
-                    #currentCookie = user_username
                     salted_password = make_pw_hash(user_username,user_password)
                     self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val)
                     self.redirect("/unit2/welcome")
