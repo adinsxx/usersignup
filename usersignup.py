@@ -26,8 +26,6 @@ EMAIL_RE  = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
 
 SECRET = 'imsosecret'
 
-global currentCookie
-
 def hash_str(s):
     return hmac.new(SECRET, s).hexdigest()
 
@@ -123,8 +121,6 @@ class MainPage(Handler):
                     usernameCookie = user_username
 
                 new_username_cookie_val = make_secure_val(str(usernameCookie))
-                global currentCookie
-                currentCookie = str(usernameCookie)
 
                 if (not usernameerror and not passworderror and not verifyerror and not emailerror):
                 	salted_password = make_pw_hash(user_username,user_password)
@@ -182,8 +178,8 @@ class LoginHandler(Handler):
                 
                 if not loginerror:
                     new_username_cookie_val = make_secure_val(str(user_username))
-                    global currentCookie
-                    currentCookie = user_username
+                    #global currentCookie
+                    #currentCookie = user_username
                     salted_password = make_pw_hash(user_username,user_password)
                     self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val)
                     self.redirect("/unit2/welcome")
