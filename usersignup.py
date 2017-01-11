@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import webapp2, cgi,re, hashlib, hmac, random, string, logging, jinja2, os
+import webapp2, cgi,re, hashlib, hmac, random, string, jinja2, os
 
 from google.appengine.ext import db
 
@@ -32,7 +32,6 @@ def hash_str(s):
     return hmac.new(SECRET, s).hexdigest()
 
 def make_secure_val(s):
-    logging.warning("What is hash_str(s) " + hash_str(s))
     return "%s|%s" % (s, hash_str(s))
 
 def check_secure_val(h):
@@ -82,7 +81,6 @@ class Handler(webapp2.RequestHandler):
     
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
-
         
 class MainPage(Handler):
         def render_usersignup(self, username="", usernameerror="", passworderror="", verifyerror = "", email = "", emailerror = ""):
@@ -112,21 +110,14 @@ class MainPage(Handler):
                 
                 usernameCookie = ''
                 username_cookie_str = self.request.cookies.get("user_id")
-                logging.warning("username cookie str " + str(username_cookie_str))
                 if username_cookie_str:
                     username_cookie_val = check_secure_val(username_cookie_str)
-                    logging.warning("username cookie val " + str(username_cookie_val))
                     dbUser = db.GqlQuery("SELECT * FROM User WHERE username='" + user_username + "'")
-                    #logging.warning("dbUser.username " + dbUser.get().username)
-                    #if username_cookie_val == user_username: # added ==
                     if dbUser.count():
                         if user_username == dbUser.get().username:
                             usernameCookie = ""
-                            logging.warning("usernameCookie " + str(usernameCookie))
-                            logging.warning("password " + user_password)
                             usernameerror = "User name already exists"
                     else:
-                        logging.warning("else")
                         usernameCookie = user_username # added
                 else:
                     usernameCookie = user_username
@@ -136,7 +127,6 @@ class MainPage(Handler):
                 currentCookie = str(usernameCookie)
 
                 if (not usernameerror and not passworderror and not verifyerror and not emailerror):
-                	logging.warning("What did I tell you?")
                 	salted_password = make_pw_hash(user_username,user_password)
                 	u = User(username = user_username, password = salted_password, email = user_email)
                 	u.put()
@@ -150,8 +140,6 @@ class WelcomeHandler(Handler):
             self.render("welcome.html", username=username)
             
         def get(self):
-            logging.warning("BOO " + currentCookie)
-            #username_cookie_str = self.request.cookies.get(currentCookie)
             username_cookie_str = self.request.cookies.get("user_id")
             username_cookie_val = check_secure_val(username_cookie_str)
             if username_cookie_val:
@@ -165,9 +153,6 @@ class WelcomeHandler(Handler):
                 
 class LoginHandler(Handler):
         def render_login(self, loginerror=""):
-        
-            #users = db.GqlQuery("SELECT * FROM User")
-            
             self.render("login.html", loginerror=loginerror)
             
         def get(self):
@@ -182,32 +167,24 @@ class LoginHandler(Handler):
 
                 loginerror = ""
                 
-                loginerror = "" if user_username else "Invalid login: no user name."
-                loginerror = "" if user_password else "Invalid password: no user password."
-                loginerror = "" if username else "Invalid login: invalid user name."
-                loginerror = "" if password else "Invalid login: invalid password."
+                loginerror = "" if user_username else "Invalid login"
+                loginerror = "" if user_password else "Invalid login"
+                loginerror = "" if username else "Invalid login"
+                loginerror = "" if password else "Invalid login"
                 
                 dbUser = db.GqlQuery("SELECT * FROM User WHERE username='" + user_username + "'")
                 
-                h = make_pw_hash(user_username, user_password)
-                #if not valid_pw(user_username, user_password, h):
-                print "VALID PW? " + str(valid_pw(user_username, user_password, h))
-                logging.warning("HHH" + h)
-                logging.warning("DB password " + dbUser.get().password)
-                #if not h == dbUser.get().password:
-                if not valid_pw(user_username, user_password, h):
-                    loginerror = "Invalid login: invalid password"
+                if not valid_pw(user_username, user_password, dbUser.get().password):
+                    loginerror = "Invalid login"
                 
                 if not dbUser.count():
-                    loginerror = "Invalid login: user does not exist"
+                    loginerror = "Invalid login"
                 
                 if not loginerror:
                     usernameCookie = ''
                     username_cookie_str = self.request.cookies.get("user_id")
-                    logging.warning("username cookie str " + str(username_cookie_str))
                     if username_cookie_str:
                         username_cookie_val = check_secure_val(username_cookie_str)
-                        logging.warning("username cookie val " + str(username_cookie_val))
                         if username_cookie_val:
                             usernameCookie = username_cookie_val
                     else:
@@ -216,7 +193,6 @@ class LoginHandler(Handler):
                     new_username_cookie_val = make_secure_val(str(usernameCookie))
                     global currentCookie
                     currentCookie = str(usernameCookie)
-                    logging.warning("What did I tell you?")
                     salted_password = make_pw_hash(user_username,user_password)
                     self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val)
                     self.redirect("/unit2/welcome")
