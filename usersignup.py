@@ -123,6 +123,7 @@ class MainPage(Handler):
                         if user_username == dbUser.get().username:
                             usernameCookie = ""
                             logging.warning("usernameCookie " + str(usernameCookie))
+                            logging.warning("password " + user_password)
                             usernameerror = "User name already exists"
                     else:
                         logging.warning("else")
@@ -137,7 +138,7 @@ class MainPage(Handler):
                 if (not usernameerror and not passworderror and not verifyerror and not emailerror):
                 	logging.warning("What did I tell you?")
                 	salted_password = make_pw_hash(user_username,user_password)
-                	u = User(username = user_username, password = salted_password.split(',')[0], email = user_email)
+                	u = User(username = user_username, password = salted_password, email = user_email)
                 	u.put()
                 	self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val) # just for user_id
                 	self.redirect("/unit2/welcome")
@@ -161,7 +162,67 @@ class WelcomeHandler(Handler):
                     self.redirect('/unit2/signup')
             else:
                 self.redirect('/unit2/signup')
+                
+class LoginHandler(Handler):
+        def render_login(self, loginerror=""):
+        
+            #users = db.GqlQuery("SELECT * FROM User")
+            
+            self.render("login.html", loginerror=loginerror)
+            
+        def get(self):
+                self.render_login()
+        
+        def post(self):
+                user_username = self.request.get('username')
+                user_password = self.request.get('password')
+
+                username = valid_username(user_username)
+                password = valid_password(user_password)
+
+                loginerror = ""
+                
+                loginerror = "" if user_username else "Invalid login: no user name."
+                loginerror = "" if user_password else "Invalid password: no user password."
+                loginerror = "" if username else "Invalid login: invalid user name."
+                loginerror = "" if password else "Invalid login: invalid password."
+                
+                dbUser = db.GqlQuery("SELECT * FROM User WHERE username='" + user_username + "'")
+                
+                h = make_pw_hash(user_username, user_password)
+                #if not valid_pw(user_username, user_password, h):
+                print "VALID PW? " + str(valid_pw(user_username, user_password, h))
+                logging.warning("HHH" + h)
+                logging.warning("DB password " + dbUser.get().password)
+                #if not h == dbUser.get().password:
+                if not valid_pw(user_username, user_password, h):
+                    loginerror = "Invalid login: invalid password"
+                
+                if not dbUser.count():
+                    loginerror = "Invalid login: user does not exist"
+                
+                if not loginerror:
+                    usernameCookie = ''
+                    username_cookie_str = self.request.cookies.get("user_id")
+                    logging.warning("username cookie str " + str(username_cookie_str))
+                    if username_cookie_str:
+                        username_cookie_val = check_secure_val(username_cookie_str)
+                        logging.warning("username cookie val " + str(username_cookie_val))
+                        if username_cookie_val:
+                            usernameCookie = username_cookie_val
+                    else:
+                        usernameCookie = user_username
+
+                    new_username_cookie_val = make_secure_val(str(usernameCookie))
+                    global currentCookie
+                    currentCookie = str(usernameCookie)
+                    logging.warning("What did I tell you?")
+                    salted_password = make_pw_hash(user_username,user_password)
+                    self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val)
+                    self.redirect("/unit2/welcome")
+                else:
+                    self.render_login(loginerror)
 
 app = webapp2.WSGIApplication([
-        ('/unit2/signup', MainPage), ('/unit2/welcome', WelcomeHandler)
+        ('/unit2/signup', MainPage), ('/unit2/welcome', WelcomeHandler), ('/unit2/login', LoginHandler)
 ], debug=True)
