@@ -181,18 +181,9 @@ class LoginHandler(Handler):
                     loginerror = "Invalid login"
                 
                 if not loginerror:
-                    usernameCookie = ''
-                    username_cookie_str = self.request.cookies.get("user_id")
-                    if username_cookie_str:
-                        username_cookie_val = check_secure_val(username_cookie_str)
-                        if username_cookie_val:
-                            usernameCookie = username_cookie_val
-                    else:
-                        usernameCookie = user_username
-
-                    new_username_cookie_val = make_secure_val(str(usernameCookie))
+                    new_username_cookie_val = make_secure_val(str(user_username))
                     global currentCookie
-                    currentCookie = str(usernameCookie)
+                    currentCookie = user_username
                     salted_password = make_pw_hash(user_username,user_password)
                     self.response.headers.add_header('Set-Cookie', 'user_id=%s; Path=/' % new_username_cookie_val)
                     self.redirect("/unit2/welcome")
